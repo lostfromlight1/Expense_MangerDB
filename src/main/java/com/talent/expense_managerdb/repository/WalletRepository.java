@@ -61,22 +61,19 @@ public class WalletRepository {
     public double getFinalBalance(String walletId) {
 
         String sql = """
-        SELECT 
-            w.initial_balance
-            + COALESCE(SUM(
-                CASE 
-                    WHEN t.transaction_type = 'INCOME' AND t.is_active = true 
-                        THEN t.amount
-                    WHEN t.transaction_type = 'EXPENSE' AND t.is_active = true 
-                        THEN -t.amount
-                    ELSE 0
-                END
-            ), 0) AS final_balance
-        FROM wallets w
-        LEFT JOIN transactions t 
-            ON w.wallet_id = t.wallet_id
-        WHERE w.wallet_id = ?
-        GROUP BY w.wallet_id
+                           SELECT\s
+                               w.initial_balance
+                               + COALESCE(SUM(
+                                   CASE\s
+                                       WHEN t.transaction_type = 'INCOME' AND t.is_active = true\s
+                                           THEN t.amount
+                                       ELSE 0
+                                   END
+                               ), 0) AS final_balance
+                           FROM wallets w
+                           LEFT JOIN transactions t ON w.wallet_id = t.wallet_id
+                           WHERE w.wallet_id = ?
+                           GROUP BY w.wallet_id
     """;
 
         try (Connection con = DBConnection.getConnection();

@@ -4,5 +4,5 @@ public enum IncomeType {
     SALARY,
     BUSINESS,
     GIFT,
-    INVESTMENT
+    OTHERS, INVESTMENT
 }

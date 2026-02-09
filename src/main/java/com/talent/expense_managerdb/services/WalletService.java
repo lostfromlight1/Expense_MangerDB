@@ -28,14 +28,25 @@ public class WalletService {
             throw new ValidationException("Wallet already exists");
         }
 
+        String walletId = IdGenerator.walletId();
         MyWallet wallet = new MyWallet(
-                IdGenerator.walletId(),
+                walletId,
                 accountId,
                 initialBalance,
                 budgetLimit
         );
 
         walletRepository.save(wallet);
+
+        if (initialBalance > 0) {
+            Income initialIncome = new Income(
+                    IdGenerator.incomeId(),
+                    walletId,
+                    initialBalance,
+                    main.java.com.talent.expense_managerdb.model.enum_type.IncomeType.OTHERS
+            );
+            transactionRepository.save(initialIncome);
+        }
     }
 
 
