@@ -24,32 +24,31 @@ public class ExpenseManagerDB_Application {
     private static final TransactionAuditRepository auditRepository = new TransactionAuditRepository();
 
     public static void main(String[] args) {
-        System.out.println("Welcome to Expense Manager");
+        System.out.println("--------------------------------------");
+        System.out.println("      EXPENSE MANAGER DATABASE        ");
+        System.out.println("--------------------------------------");
 
         while (true) {
             try {
-                System.out.println("""
-                        \n=====================
-                        1. Register
-                        2. Login
-                        3. Exit
-                        =====================
-                        """);
-                System.out.print("Choose an option: ");
+                System.out.println("\nMAIN MENU");
+                System.out.println("1. Register");
+                System.out.println("2. Login");
+                System.out.println("3. Exit");
+                System.out.print("Selection: ");
+
                 String choice = sc.nextLine().trim();
 
                 switch (choice) {
                     case "1" -> handleRegister();
                     case "2" -> handleLogin();
                     case "3" -> {
-                        System.out.println("Bye");
+                        System.out.println("Application terminated.");
                         System.exit(0);
                     }
-                    default -> System.out.println("Invalid choice. Please try again.");
+                    default -> System.out.println("Invalid selection. Try again.");
                 }
             } catch (Exception e) {
-                System.out.println(STR."Critical Error: \{e.getMessage()}");
-                System.out.println("Restarting menu...");
+                System.out.println("Error: " + e.getMessage());
             }
         }
     }
@@ -57,55 +56,56 @@ public class ExpenseManagerDB_Application {
     // ================= AUTHENTICATION =================
 
     private static void handleRegister() {
-        System.out.println("\n--- REGISTRATION ---");
-        String name = readRequiredString("Enter Name: ");
-        String email = readRequiredString("Enter Email: ");
-        String password = readRequiredString("Enter Password: ");
+        System.out.println("\n[ REGISTRATION ]");
+        String name = readRequiredString("Name: ");
+        String email = readRequiredString("Email: ");
+        String password = readRequiredString("Password: ");
 
         try {
             Account acc = accountService.register(name, email, password);
-            System.out.println(STR."Registered successfully! Account ID: \{acc.getAccountId()}");
+            System.out.println("Registration successful. Account ID: " + acc.getAccountId());
         } catch (Exception e) {
-            System.out.println(STR."Registration Failed: \{e.getMessage()}");
+            System.out.println("Registration failed: " + e.getMessage());
         }
     }
 
     private static void handleLogin() {
-        System.out.println("\n--- LOGIN ---");
-        String email = readRequiredString("Enter Email: ");
-        String password = readRequiredString("Enter Password: ");
+        System.out.println("\n[ LOGIN ]");
+        String email = readRequiredString("Email: ");
+        String password = readRequiredString("Password: ");
 
         try {
             Account acc = accountService.login(email, password);
-            System.out.println(STR."Login Successful! Welcome, \{acc.getName()}");
+            System.out.println("Access granted. Welcome, " + acc.getName());
 
             MyWallet wallet = walletRepository.findByAccountId(acc.getAccountId());
             if (wallet == null) {
                 wallet = createWalletFlow(acc);
             }
 
-            walletMenu(acc, wallet);
-
+            if (wallet != null) {
+                walletMenu(acc, wallet);
+            }
         } catch (Exception e) {
-            System.out.println(STR."Login Failed: \{e.getMessage()}");
+            System.out.println("Login failed: " + e.getMessage());
         }
     }
 
     // ================= WALLET SETUP =================
 
     private static MyWallet createWalletFlow(Account acc) {
-        System.out.println("\n⚠ No wallet found for this account.");
-        System.out.println("Let's set one up.");
+        System.out.println("\nNotice: No wallet found for this account.");
+        System.out.println("Initializing wallet setup...");
 
-        double initial = readDouble("Enter Initial Balance: ");
-        double budget = readDouble("Enter Monthly Budget Limit: ");
+        double initial = readDouble("Initial Balance: ");
+        double budget = readDouble("Monthly Budget Limit: ");
 
         try {
             walletService.createWallet(acc.getAccountId(), initial, budget);
-            System.out.println("Wallet created successfully!");
+            System.out.println("Wallet initialized successfully.");
             return walletRepository.findByAccountId(acc.getAccountId());
         } catch (Exception e) {
-            System.out.println(STR."Error creating wallet: \{e.getMessage()}");
+            System.out.println("Error: " + e.getMessage());
             return null;
         }
     }
@@ -113,23 +113,22 @@ public class ExpenseManagerDB_Application {
     // ================= MAIN DASHBOARD =================
 
     private static void walletMenu(Account acc, MyWallet wallet) {
-        boolean loggedIn = true;
-        while (loggedIn) {
+        boolean sessionActive = true;
+        while (sessionActive) {
             try {
                 wallet = walletRepository.findByAccountId(acc.getAccountId());
                 showWalletHeader(wallet);
 
-                System.out.println("""
-                        1. Manage Income
-                        2. Manage Expense
-                        3. Show Transactions (By Type)
-                        4. Budget Calculator
-                        5. Transactions by Date Range
-                        6. Monthly Summary
-                        7. Audit Logs
-                        8. Logout
-                        """);
-                System.out.print("Select action: ");
+                System.out.println("1. Manage Income");
+                System.out.println("2. Manage Expense");
+                System.out.println("3. View Transactions by Type");
+                System.out.println("4. View Budget Status");
+                System.out.println("5. View Transactions by Date");
+                System.out.println("6. View Monthly Summary");
+                System.out.println("7. View Audit Logs");
+                System.out.println("8. Logout");
+                System.out.print("Selection: ");
+
                 String choice = sc.nextLine().trim();
 
                 switch (choice) {
@@ -140,14 +139,14 @@ public class ExpenseManagerDB_Application {
                     case "5" -> showByDateRange(wallet);
                     case "6" -> showMonthlySummary(wallet);
                     case "7" -> showAuditLogs();
-                    case "8" -> loggedIn = false;
-                    default -> System.out.println("Invalid choice.");
+                    case "8" -> sessionActive = false;
+                    default -> System.out.println("Invalid selection.");
                 }
 
-                if (loggedIn) promptEnterKey();
+                if (sessionActive) promptEnterKey();
 
             } catch (Exception e) {
-                System.out.println(STR."Operation Error: \{e.getMessage()}");
+                System.out.println("Runtime Error: " + e.getMessage());
                 promptEnterKey();
             }
         }
@@ -155,26 +154,19 @@ public class ExpenseManagerDB_Application {
 
     private static void showWalletHeader(MyWallet wallet) {
         double currentBalance = walletRepository.getFinalBalance(wallet.getWalletId());
-
-        boolean overBudget = false;
-
-        System.out.println(STR."""
-            ===============================
-            Wallet ID : \{wallet.getWalletId()}
-            Balance   : \{String.format("%.2f", currentBalance)}
-            Budget    : \{String.format("%.2f", wallet.getBudgetLimit())}
-            ===============================
-            """);
+        System.out.println("\n===============================");
+        System.out.printf("Wallet ID : %s%n", wallet.getWalletId());
+        System.out.printf("Balance   : %.2f%n", currentBalance);
+        System.out.printf("Budget    : %.2f%n", wallet.getBudgetLimit());
+        System.out.println("===============================");
     }
 
-    // ================= INCOME MANAGEMENT =================
+    // ================= TRANSACTION MANAGEMENT =================
 
     private static void incomeMenu(MyWallet wallet) {
-        System.out.println("\n--- INCOME MENU ---");
-        System.out.println("1. Add New Income");
-        System.out.println("2. Edit Existing Income");
-        System.out.println("3. Delete Income");
-        System.out.print("Choose: ");
+        System.out.println("\n[ INCOME MANAGEMENT ]");
+        System.out.println("1. Add Income\n2. Edit Income\n3. Delete Income");
+        System.out.print("Selection: ");
         String c = sc.nextLine().trim();
 
         try {
@@ -182,39 +174,33 @@ public class ExpenseManagerDB_Application {
                 case "1" -> {
                     double amt = readDouble("Amount: ");
                     IncomeType type = readEnum("Source", IncomeType.class);
-
                     Income inc = new Income(IdGenerator.incomeId(), wallet.getWalletId(), amt, type);
                     transactionService.add(inc);
-                    System.out.println("Income added!");
+                    System.out.println("Income recorded.");
                 }
                 case "2" -> {
                     printTransactionsByType(wallet, "INCOME");
-                    String id = readRequiredString("Enter Income ID to Edit: ");
-                    double newAmt = readDouble("Enter New Amount: ");
-                    transactionService.edit(id, newAmt); // Requires your service to handle 'touch'
-                    System.out.println("Income updated!");
+                    String id = readRequiredString("Target Income ID: ");
+                    double newAmt = readDouble("New Amount: ");
+                    transactionService.edit(id, newAmt);
+                    System.out.println("Income updated.");
                 }
                 case "3" -> {
                     printTransactionsByType(wallet, "INCOME");
-                    String id = readRequiredString("Enter Income ID to Delete: ");
+                    String id = readRequiredString("Target Income ID: ");
                     transactionService.delete(id);
-                    System.out.println("🗑 Income deleted!");
+                    System.out.println("Income record removed.");
                 }
-                default -> System.out.println("Invalid option.");
             }
         } catch (Exception e) {
-            System.out.println(STR."Failed: \{e.getMessage()}");
+            System.out.println("Error: " + e.getMessage());
         }
     }
 
-    // ================= EXPENSE MANAGEMENT =================
-
     private static void expenseMenu(MyWallet wallet) {
-        System.out.println("\n--- EXPENSE MENU ---");
-        System.out.println("1. Add New Expense");
-        System.out.println("2. Edit Existing Expense");
-        System.out.println("3. Delete Expense");
-        System.out.print("Choose: ");
+        System.out.println("\n[ EXPENSE MANAGEMENT ]");
+        System.out.println("1. Add Expense\n2. Edit Expense\n3. Delete Expense");
+        System.out.print("Selection: ");
         String c = sc.nextLine().trim();
 
         try {
@@ -222,133 +208,63 @@ public class ExpenseManagerDB_Application {
                 case "1" -> {
                     double amt = readDouble("Amount: ");
                     ExpenseType type = readEnum("Category", ExpenseType.class);
-
                     Expense exp = new Expense(IdGenerator.expenseId(), wallet.getWalletId(), amt, type);
                     transactionService.add(exp);
-                    System.out.println("Expense added!");
+                    System.out.println("Expense recorded.");
                 }
                 case "2" -> {
                     printTransactionsByType(wallet, "EXPENSE");
-                    String id = readRequiredString("Enter Expense ID to Edit: ");
-                    double newAmt = readDouble("Enter New Amount: ");
+                    String id = readRequiredString("Target Expense ID: ");
+                    double newAmt = readDouble("New Amount: ");
                     transactionService.edit(id, newAmt);
-                    System.out.println("Expense updated!");
+                    System.out.println("Expense updated.");
                 }
                 case "3" -> {
                     printTransactionsByType(wallet, "EXPENSE");
-                    String id = readRequiredString("Enter Expense ID to Delete: ");
+                    String id = readRequiredString("Target Expense ID: ");
                     transactionService.delete(id);
-                    System.out.println("🗑 Expense deleted!");
+                    System.out.println("Expense record removed.");
                 }
-                default -> System.out.println("Invalid option.");
             }
         } catch (Exception e) {
-            System.out.println(STR."Failed: \{e.getMessage()}");
+            System.out.println("Error: " + e.getMessage());
         }
     }
 
-    // ================= REPORTS & HELPERS =================
-
-    private static void printTransactionsByType(MyWallet wallet, String typeStr) {
-        System.out.println(STR."\n--- Your \{typeStr}s ---");
-        List<Transaction> list = transactionRepository.findByWallet(wallet.getWalletId());
-
-        boolean found = false;
-        for (Transaction t : list) {
-            if (t.getTransactionType().name().equals(typeStr)) {
-                System.out.println(STR."ID: \{t.getTransactionId()} | Category \{t.getCategory()} | $ \{t.getTransactionAmount()}");
-                found = true;
-            }
-        }
-        if (!found) System.out.println("(No records found)");
-        System.out.println("-----------------------");
-    }
-
-    private static void showByType(MyWallet wallet) {
-        System.out.println("\n--- Filter Transactions ---");
-        System.out.println("1. INCOME");
-        System.out.println("2. EXPENSE");
-        String typeChoice = sc.nextLine().trim();
-
-        String filter = typeChoice.equals("1") ? "INCOME" : (typeChoice.equals("2") ? "EXPENSE" : null);
-
-        if (filter != null) {
-            printTransactionsByType(wallet, filter);
-        } else {
-            System.out.println("Invalid Type");
-        }
-    }
+    // ================= DATA VISUALIZATION =================
 
     private static void showBudget(MyWallet wallet) {
         double totalExpense = transactionRepository.findByWallet(wallet.getWalletId())
                 .stream()
-                .filter(t -> t instanceof Expense)
+                .filter(t -> t.getTransactionType() == TransactionType.EXPENSE)
                 .mapToDouble(Transaction::getTransactionAmount)
                 .sum();
 
         double remaining = wallet.getBudgetLimit() - totalExpense;
-        String status = remaining < 0 ? "OVER BUDGET" : "Within Budget";
+        String status = (remaining < 0) ? "OVER BUDGET" : "UNDER BUDGET";
 
-        System.out.println("\n--- Budget Overview ---");
-        System.out.println(STR."Budget Limit : \{wallet.getBudgetLimit()}");
-        System.out.println(STR."Total Spent  : \{totalExpense}");
-        System.out.println(STR."Remaining    : \{remaining} (\{status})");
-    }
-
-    private static void showByDateRange(MyWallet wallet) {
-        System.out.println("\n--- Date Range Filter ---");
-        LocalDate from = readDate("From (yyyy-mm-dd): ");
-        LocalDate to = readDate("To (yyyy-mm-dd): ");
-
-        List<Transaction> list = transactionRepository.findByDateRange(wallet.getWalletId(), from, to);
-
-        if (list.isEmpty()) {
-            System.out.println("No transactions found in this range.");
-        } else {
-            System.out.println("ID | Type | Amount | Date");
-            list.forEach(t -> System.out.println(
-                    STR."\{t.getTransactionId()} | \{t.getTransactionType()} | \{t.getTransactionAmount()} | \{t.getCreatedAt().toLocalDate()}"
-            ));
-        }
-    }
-
-    private static void showMonthlySummary(MyWallet wallet) {
-        System.out.println("\n--- Monthly Summary ---");
-        int year = (int) readDouble("Enter Year (e.g. 2025): ");
-        int month = (int) readDouble("Enter Month (1-12): ");
-
-        double income = 0;
-        double expense = 0;
-
-        for (Transaction tx : transactionRepository.findByWallet(wallet.getWalletId())) {
-            LocalDate date = tx.getCreatedAt().toLocalDate();
-            if (date.getYear() == year && date.getMonthValue() == month) {
-                if (tx instanceof Income) income += tx.getTransactionAmount();
-                else expense += tx.getTransactionAmount();
-            }
-        }
-
-        System.out.println(STR."\nSummary for \{month}/\{year}");
-        System.out.println(STR."Total Income : \{income}");
-        System.out.println(STR."Total Expense: \{expense}");
-        System.out.println(STR."Net Savings  : \{income - expense}");
+        System.out.println("\n[ BUDGET STATUS ]");
+        System.out.printf("Limit     : %.2f%n", wallet.getBudgetLimit());
+        System.out.printf("Spent     : %.2f%n", totalExpense);
+        System.out.printf("Remaining : %.2f (%s)%n", remaining, status);
     }
 
     private static void showAuditLogs() {
-        System.out.println("\n--- Audit Logs ---");
+        System.out.println("\n[ SYSTEM AUDIT LOGS ]");
         auditRepository.findAll().forEach(log ->
-                System.out.println(STR."\{log.getCreatedAt()} | \{log.getAction()} | ID: \{log.getTransactionId()} | Old: \{log.getOldValue()} -> New: \{log.getNewValue()}")
+                System.out.printf("%s | %-10s | ID: %s | %.2f -> %.2f%n",
+                        log.getCreatedAt(), log.getAction(), log.getTransactionId(), log.getOldValue(), log.getNewValue())
         );
     }
 
-    // ================= ROBUST INPUT HELPERS =================
+    // ================= INPUT HELPERS =================
 
     private static String readRequiredString(String prompt) {
         while (true) {
             System.out.print(prompt);
             String input = sc.nextLine().trim();
             if (!input.isEmpty()) return input;
-            System.out.println("Input cannot be empty.");
+            System.out.println("Field cannot be empty.");
         }
     }
 
@@ -359,7 +275,7 @@ public class ExpenseManagerDB_Application {
             try {
                 return Double.parseDouble(input);
             } catch (NumberFormatException e) {
-                System.out.println("Invalid number. Please enter a value like 100.50");
+                System.out.println("Invalid numeric input.");
             }
         }
     }
@@ -371,7 +287,7 @@ public class ExpenseManagerDB_Application {
             try {
                 return LocalDate.parse(input);
             } catch (DateTimeParseException e) {
-                System.out.println("Invalid date format. Use yyyy-mm-dd");
+                System.out.println("Invalid format (YYYY-MM-DD).");
             }
         }
     }
@@ -379,30 +295,68 @@ public class ExpenseManagerDB_Application {
     private static <T extends Enum<T>> T readEnum(String label, Class<T> enumClass) {
         T[] constants = enumClass.getEnumConstants();
         while (true) {
-            System.out.println(STR."Select \{label}:");
+            System.out.println("\nAvailable " + label + " options:");
             for (int i = 0; i < constants.length; i++) {
-                System.out.println(STR."  \{i + 1}. \{constants[i]}");
+                System.out.println((i + 1) + ". " + constants[i]);
             }
-            System.out.print("Enter number or name: ");
+            System.out.print("Select index or name: ");
             String input = sc.nextLine().trim().toUpperCase();
 
             try {
                 int index = Integer.parseInt(input) - 1;
-                if (index >= 0 && index < constants.length) {
-                    return constants[index];
-                }
-            } catch (NumberFormatException ignored) {
-                try {
-                    return Enum.valueOf(enumClass, input);
-                } catch (IllegalArgumentException e) {
-                }
-            }
-            System.out.println("Invalid selection. Please try again.");
+                if (index >= 0 && index < constants.length) return constants[index];
+            } catch (NumberFormatException ignored) {}
+
+            try {
+                return Enum.valueOf(enumClass, input);
+            } catch (IllegalArgumentException ignored) {}
+
+            System.out.println("Invalid option.");
         }
     }
 
     private static void promptEnterKey() {
         System.out.println("\nPress Enter to continue...");
         sc.nextLine();
+    }
+
+    private static void printTransactionsByType(MyWallet wallet, String typeStr) {
+        System.out.println("\n--- " + typeStr + " LIST ---");
+        transactionRepository.findByWallet(wallet.getWalletId()).stream()
+                .filter(t -> t.getTransactionType().name().equalsIgnoreCase(typeStr))
+                .forEach(t -> System.out.printf("ID: %s | Category: %s | Amount: %.2f%n",
+                        t.getTransactionId(), t.getCategory(), t.getTransactionAmount()));
+    }
+
+    private static void showByType(MyWallet wallet) {
+        System.out.println("\n1. INCOME\n2. EXPENSE");
+        System.out.print("Selection: ");
+        String type = sc.nextLine().trim();
+        if (type.equals("1")) printTransactionsByType(wallet, "INCOME");
+        else if (type.equals("2")) printTransactionsByType(wallet, "EXPENSE");
+    }
+
+    private static void showByDateRange(MyWallet wallet) {
+        LocalDate from = readDate("Start Date (yyyy-mm-dd): ");
+        LocalDate to = readDate("End Date (yyyy-mm-dd): ");
+        List<Transaction> list = transactionRepository.findByDateRange(wallet.getWalletId(), from, to);
+        if (list.isEmpty()) System.out.println("No records found.");
+        else list.forEach(t -> System.out.printf("%s | %s | %.2f | %s%n",
+                t.getTransactionId(), t.getTransactionType(), t.getTransactionAmount(), t.getCreatedAt().toLocalDate()));
+    }
+
+    private static void showMonthlySummary(MyWallet wallet) {
+        int year = (int) readDouble("Year: ");
+        int month = (int) readDouble("Month (1-12): ");
+        double incTotal = 0, expTotal = 0;
+        for (Transaction tx : transactionRepository.findByWallet(wallet.getWalletId())) {
+            LocalDate date = tx.getCreatedAt().toLocalDate();
+            if (date.getYear() == year && date.getMonthValue() == month) {
+                if (tx.getTransactionType() == TransactionType.INCOME) incTotal += tx.getTransactionAmount();
+                else expTotal += tx.getTransactionAmount();
+            }
+        }
+        System.out.printf("Summary: Income: %.2f | Expense: %.2f | Net: %.2f%n",
+                incTotal, expTotal, (incTotal - expTotal));
     }
 }

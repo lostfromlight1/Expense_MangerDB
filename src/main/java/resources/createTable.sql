@@ -25,7 +25,6 @@ CREATE TABLE wallets (
                          CONSTRAINT fk_wallet_account FOREIGN KEY (account_id)
                              REFERENCES accounts(account_id) ON DELETE CASCADE
 );
-select * from wallets;
 
 CREATE TABLE transactions (
                               transaction_id VARCHAR(50) PRIMARY KEY,
@@ -49,8 +48,7 @@ CREATE TABLE transaction_audit (
                                    new_value DECIMAL(12,2),
                                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-drop table transaction_audit_logs;
 
 CREATE INDEX idx_accounts_email ON accounts(email);
 CREATE INDEX idx_tx_wallet ON transactions(wallet_id);
-CREATE INDEX idx_audit_tx ON transaction_audit_logs(transaction_id);
+CREATE INDEX idx_audit_tx ON transaction_audit(transaction_id);
