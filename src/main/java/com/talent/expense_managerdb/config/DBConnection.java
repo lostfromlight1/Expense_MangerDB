@@ -13,6 +13,7 @@ public class DBConnection {
     public static Connection getConnection() {
         try {
             return DriverManager.getConnection(URL, USER, PASSWORD);
+
         } catch (Exception e) {
             throw new main.java.com.talent.expense_managerdb.exception.DatabaseException("Failed to connect to database", e);
         }

@@ -154,11 +154,16 @@ public class ExpenseManagerDB_Application {
 
     private static void showWalletHeader(MyWallet wallet) {
         double currentBalance = walletRepository.getFinalBalance(wallet.getWalletId());
-        System.out.println("\n===============================");
-        System.out.printf("Wallet ID : %s%n", wallet.getWalletId());
-        System.out.printf("Balance   : %.2f%n", currentBalance);
-        System.out.printf("Budget    : %.2f%n", wallet.getBudgetLimit());
+        double balance = walletService.getTotalIncome(wallet.getWalletId());
+        double expense = walletService.getTotalExpense(wallet.getWalletId());
+
         System.out.println("===============================");
+        System.out.println("Wallet ID : " + wallet.getWalletId());
+        System.out.println("Balance   : " + balance);
+        System.out.println("Expense   : " + expense);
+        System.out.println("Budget    : " + wallet.getBudgetLimit());
+        System.out.println("===============================");
+
     }
 
     // ================= TRANSACTION MANAGEMENT =================

@@ -59,17 +59,25 @@ public class WalletRepository {
         }
     }
     public double getFinalBalance(String walletId) {
+
         String sql = """
-            SELECT 
-                w.initial_balance 
-                + COALESCE(SUM(CASE WHEN t.transaction_type = 'INCOME' THEN t.amount ELSE 0 END), 0) 
-                - COALESCE(SUM(CASE WHEN t.transaction_type = 'EXPENSE' THEN t.amount ELSE 0 END), 0) 
-                AS final_balance
-            FROM wallets w
-            LEFT JOIN transactions t ON w.wallet_id = t.wallet_id
-            WHERE w.wallet_id = ?
-            GROUP BY w.wallet_id
-        """;
+        SELECT 
+            w.initial_balance
+            + COALESCE(SUM(
+                CASE 
+                    WHEN t.transaction_type = 'INCOME' AND t.is_active = true 
+                        THEN t.amount
+                    WHEN t.transaction_type = 'EXPENSE' AND t.is_active = true 
+                        THEN -t.amount
+                    ELSE 0
+                END
+            ), 0) AS final_balance
+        FROM wallets w
+        LEFT JOIN transactions t 
+            ON w.wallet_id = t.wallet_id
+        WHERE w.wallet_id = ?
+        GROUP BY w.wallet_id
+    """;
 
         try (Connection con = DBConnection.getConnection();
              PreparedStatement ps = con.prepareStatement(sql)) {
@@ -86,4 +94,24 @@ public class WalletRepository {
             throw new DatabaseException("Failed to calculate balance", e);
         }
     }
+
+    public void updateInitialBalance(String walletId, double delta) {
+        String sql = """
+            UPDATE wallets
+            SET initial_balance = initial_balance + ?
+            WHERE wallet_id = ?
+        """;
+
+        try (Connection con = DBConnection.getConnection();
+             PreparedStatement ps = con.prepareStatement(sql)) {
+
+            ps.setDouble(1, delta);
+            ps.setString(2, walletId);
+            ps.executeUpdate();
+
+        } catch (Exception e) {
+            throw new DatabaseException("Failed to update wallet balance", e);
+        }
+    }
+
 }

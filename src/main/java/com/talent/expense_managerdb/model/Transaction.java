@@ -17,6 +17,13 @@ public abstract class Transaction extends BaseEntity {
         this.walletId = walletId;
         this.transactionAmount = transactionAmount;
     }
+    public boolean isIncome() {
+        return getTransactionType() == TransactionType.INCOME;
+    }
+
+    public boolean isExpense() {
+        return getTransactionType() == TransactionType.EXPENSE;
+    }
 
     public String getTransactionId() {
         return transactionId;
